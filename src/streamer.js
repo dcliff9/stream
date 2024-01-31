@@ -15,27 +15,39 @@ function startStreaming(rtmpsUrl, rtmpsKey, socket) {
     });
 }
 
+const { exec } = require('child_process');
+
 function stopStreaming(socket) {
     if (ffmpegProcess) {
         console.log('Attempting to stop FFmpeg process...');
         socket.emit('message', 'Attempting to stop FFmpeg process...');
 
-        ffmpegProcess.kill('SIGINT');
+        // Try sending SIGTERM first
+        ffmpegProcess.kill('SIGTERM');
 
-        ffmpegProcess.on('close', (code, signal) => {
-            console.log(`FFmpeg process terminated with code: ${code}, signal: ${signal}`);
-            socket.emit('message', `FFmpeg process terminated with code: ${code}, signal: ${signal}`);
-        });
+        // Set a timeout to forcefully kill the process if it doesn't exit
+        setTimeout(() => {
+            console.log('Forcefully terminating FFmpeg process...');
+            exec(`pkill -f ffmpeg`, (error, stdout, stderr) => {
+                if (error) {
+                    console.log(`Error while forcefully terminating FFmpeg: ${error}`);
+                    socket.emit('message', `Error while forcefully terminating FFmpeg: ${error}`);
+                    return;
+                }
+                if (stderr) {
+                    console.log(`FFmpeg termination STDERR: ${stderr}`);
+                }
+                console.log('FFmpeg process forcefully terminated.');
+                socket.emit('message', 'FFmpeg process forcefully terminated.');
+            });
+        }, 5000); // 5 seconds timeout for graceful shutdown
 
-        ffmpegProcess.on('error', (err) => {
-            console.log(`Failed to stop FFmpeg process: ${err}`);
-            socket.emit('message', `Failed to stop FFmpeg process: ${err}`);
-        });
     } else {
         console.log('No FFmpeg process to stop.');
         socket.emit('message', 'No streaming process to stop');
     }
 }
+
 
 
 module.exports = {
