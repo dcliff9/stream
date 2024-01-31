@@ -12,10 +12,12 @@
     </div>
     <br>
     <label for="rtmpsUrl">RTMPS URL:</label>
-    <input type="text" id="rtmpsUrl" name="rtmpsUrl">
+    <input type="text" id="rtmpsUrl" name="rtmpsUrl" value="rtmps://live.hitchstream.com:443/live/">
+
+    <br>
     <label for="rtmpsKey">RTMPS Key:</label>
     <input type="text" id="rtmpsKey" name="rtmpsKey">
-    <br>
+    <br><br>
 
 
     <button id="testStreamButton">Test Stream</button>
@@ -120,6 +122,7 @@
         }
 
         fetchAndDisplayFileList(); // Call this function to fetch and display the file list
+
     </script>
 </body>
 
