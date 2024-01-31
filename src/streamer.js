@@ -15,7 +15,6 @@ function startStreaming(rtmpsUrl, rtmpsKey, socket) {
     });
 }
 
-const { exec } = require('child_process');
 
 function stopStreaming(socket) {
     if (ffmpegProcess) {
