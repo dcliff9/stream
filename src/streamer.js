@@ -4,26 +4,27 @@ const {
 
 let ffmpegProcess; // Define the variable at the top level
 
-function startStreaming(srtUrl) {
+function startStreaming(srtUrl, logCallback) {
     const ffmpegCommand = `ffmpeg -re -i public/testvideo.mp4 -c copy -f mpegts ${srtUrl}`;
-    ffmpegProcess = exec(ffmpegCommand, (error, stdout, stderr) => { // Assign the process here
+    ffmpegProcess = exec(ffmpegCommand, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Error: ${error.message}`);
-            return;
+            logCallback(`Error: ${error.message}`);
         }
         if (stderr) {
-            console.error(`Stderr: ${stderr}`);
-            return;
+            logCallback(`FFmpeg Stderr: ${stderr}`);
         }
-        console.log(`Stdout: ${stdout}`);
     });
 }
 
-function stopStreaming() {
+function stopStreaming(logCallback) {
     if (ffmpegProcess) {
-        ffmpegProcess.kill('SIGINT'); // Sends SIGINT to stop FFmpeg gracefully
+        ffmpegProcess.kill('SIGINT');
+        logCallback('Streaming stopped');
+    } else {
+        logCallback('No streaming process to stop');
     }
 }
+
 
 module.exports = {
     startStreaming,

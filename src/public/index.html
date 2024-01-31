@@ -12,8 +12,18 @@
     <button id="testStreamButton">Test Stream</button>
     <button id="stopStreamButton">Stop Stream</button>
 
+    <br><br>Debug :<br>
+    <textarea id="debugLog" rows="10" cols="50" readonly></textarea>
 
     <script>
+        // Function to append messages to the debug log text area
+        function appendToDebugLog(message) {
+            const debugLog = document.getElementById('debugLog');
+            debugLog.value += message + '\n'; // Append the message and a newline
+            debugLog.scrollTop = debugLog.scrollHeight; // Scroll to the bottom
+        }
+
+        // Event listener for the Test Stream button
         document.getElementById('testStreamButton').addEventListener('click', function() {
             const srtUrl = document.getElementById('srtUrl').value;
             fetch('/start-streaming', {
@@ -26,21 +36,21 @@
                     })
                 })
                 .then(response => response.text())
-                .then(data => console.log(data))
-                .catch(error => console.error('Error:', error));
+                .then(data => appendToDebugLog(data)) // Append data to debug log
+                .catch(error => appendToDebugLog('Error: ' + error)); // Append error to debug log
         });
-    </script>
 
-    <script>
+        // Event listener for the Stop Stream button
         document.getElementById('stopStreamButton').addEventListener('click', function() {
             fetch('/stop-streaming', {
                     method: 'POST'
                 })
                 .then(response => response.text())
-                .then(data => console.log(data))
-                .catch(error => console.error('Error:', error));
+                .then(data => appendToDebugLog(data)) // Append data to debug log
+                .catch(error => appendToDebugLog('Error: ' + error)); // Append error to debug log
         });
     </script>
+
 
 
 </body>
