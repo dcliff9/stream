@@ -67,6 +67,7 @@
                 .then(data => {
                     clearInterval(intervalId); // Stop showing upload progress
                     appendToDebugLog(data); // Show the response message
+                    fetchAndDisplayFileList(); // Refresh the file list
                 })
                 .catch(error => {
                     clearInterval(intervalId); // Stop showing upload progress
@@ -84,6 +85,18 @@
 
             return intervalId;
         }
+
+        function fetchAndDisplayFileList() {
+            fetch('/list-videos')
+                .then(response => response.json())
+                .then(files => {
+                    const fileListDiv = document.getElementById('fileList');
+                    fileListDiv.innerHTML = '<ul>' + files.map(file => `<li>${file}</li>`).join('') + '</ul>';
+                })
+                .catch(error => appendToDebugLog('Error fetching file list: ' + error));
+        }
+
+        fetchAndDisplayFileList();
     </script>
 </body>
 

@@ -4,6 +4,7 @@ const port = process.env.PORT || 3000;
 const { exec } = require("child_process");
 const path = require('path');
 const multer = require('multer');
+const fs = require('fs');
 
 // Configure multer for custom file naming and directory
 const storage = multer.diskStorage({
@@ -57,7 +58,20 @@ io.on('connection', socket => {
 app.post('/upload', upload.single('file'), (req, res) => {
     console.log(`File uploaded: ${req.file.filename}`);
     io.emit('message', `File uploaded successfully: ${req.file.filename}`);  // Emitting message to the client with file name
-    res.send(`File uploaded successfully: ${req.file.filename}`);
+    res.status(200).end(); 
+});
+
+app.get('/list-videos', (req, res) => {
+    const directoryPath = path.join(__dirname, 'public', 'videos');
+
+    fs.readdir(directoryPath, function (err, files) {
+        if (err) {
+            console.log('Error getting directory information.');
+            res.status(500).send('Unable to list files');
+        } else {
+            res.send(files);
+        }
+    });
 });
 
 // Start the server
