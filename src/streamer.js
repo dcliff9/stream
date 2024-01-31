@@ -3,7 +3,7 @@ const { exec } = require('child_process');
 let ffmpegProcess; // Define the variable at the top level
 
 function startStreaming(rtmpsUrl, rtmpsKey, socket) {
-    const ffmpegCommand = `ffmpeg -stream_loop -1 -re -i /usr/src/app/src/public/testvideo.mp4 -c copy -f flv ${rtmpsUrl}/${rtmpsKey}`;
+    const ffmpegCommand = `ffmpeg -stream_loop -1 -re -i /usr/src/app/src/public/videos/testvideo.mp4 -c copy -f flv ${rtmpsUrl}/${rtmpsKey}`;
     ffmpegProcess = exec(ffmpegCommand, (error, stdout, stderr) => {
         if (error) {
             socket.emit('message', `Error: ${error.message}`);

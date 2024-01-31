@@ -4,7 +4,7 @@ const port = process.env.PORT || 3000;
 const { exec } = require("child_process");
 const path = require('path');
 const multer = require('multer');
-const upload = multer({ dest: 'public/' }); // files will be saved to 'public' directory
+const upload = multer({ dest: 'public/videos/' }); // files will be saved to 'public/videos' directory
 
 
 // Socket.io setup
@@ -43,6 +43,7 @@ io.on('connection', socket => {
 
 app.post('/upload', upload.single('file'), (req, res) => {
     console.log(`File uploaded: ${req.file.path}`);
+    io.emit('message', 'File uploaded successfully.');  // Emitting message to the client
     res.send('File uploaded successfully.');
 });
 
