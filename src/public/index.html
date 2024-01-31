@@ -95,7 +95,21 @@
                 .then(response => response.json())
                 .then(files => {
                     const fileListDiv = document.getElementById('fileList');
-                    fileListDiv.innerHTML = '<ul>' + files.map(file => `<li>${file}</li>`).join('') + '</ul>';
+                    const fileListDiv = document.getElementById('fileList');
+                    fileListDiv.innerHTML = ''; // Clear existing content
+                    const select = document.createElement('select');
+                    select.name = 'fileList';
+                    select.id = 'fileListSelect';
+
+                    files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file;
+                        option.text = file;
+                        select.appendChild(option);
+                    });
+
+                    fileListDiv.appendChild(select);
+
                 })
                 .catch(error => appendToDebugLog('Error fetching file list: ' + error));
         }
