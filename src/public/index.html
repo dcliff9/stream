@@ -1,25 +1,20 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Video Stream</title>
 </head>
-
 <body>
     <label for="rtmpsUrl">RTMPS URL:</label>
     <input type="text" id="rtmpsUrl" name="rtmpsUrl">
     <label for="rtmpsKey">RTMPS Key:</label>
     <input type="text" id="rtmpsKey" name="rtmpsKey">
-
     <button id="testStreamButton">Test Stream</button>
     <button id="stopStreamButton">Stop Stream</button>
 
-    <form id="uploadForm" enctype="multipart/form-data" action="/upload" method="post">
+    <form id="uploadForm" enctype="multipart/form-data">
         <input type="file" name="file" accept=".mp4" required />
         <button type="submit">Upload File</button>
     </form>
-    
-
 
     <br><br>Debug :<br>
     <textarea id="debugLog" rows="10" cols="50" readonly></textarea>
@@ -27,15 +22,14 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-
         socket.on('message', function(msg) {
             appendToDebugLog(msg);
         });
 
         function appendToDebugLog(message) {
             const debugLog = document.getElementById('debugLog');
-            debugLog.value += message + '\n'; // Append the message and a newline
-            debugLog.scrollTop = debugLog.scrollHeight; // Scroll to the bottom
+            debugLog.value += message + '\n';
+            debugLog.scrollTop = debugLog.scrollHeight;
         }
 
         document.getElementById('testStreamButton').addEventListener('click', function() {
@@ -46,19 +40,25 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    rtmpsUrl,
-                    rtmpsKey
-                })
+                body: JSON.stringify({ rtmpsUrl, rtmpsKey })
             });
         });
 
         document.getElementById('stopStreamButton').addEventListener('click', function() {
-            fetch('/stop-streaming', {
-                method: 'POST'
-            });
+            fetch('/stop-streaming', { method: 'POST' });
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => appendToDebugLog(data))
+            .catch(error => appendToDebugLog('Upload Failed: ' + error));
         });
     </script>
 </body>
-
 </html>

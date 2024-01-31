@@ -4,7 +4,8 @@ const port = process.env.PORT || 3000;
 const { exec } = require("child_process");
 const path = require('path');
 const multer = require('multer');
-const upload = multer({ dest: 'public/videos/' }); // files will be saved to 'public/videos' directory
+const upload = multer({ dest: '/usr/src/app/src/public/videos' });
+
 
 
 // Socket.io setup
