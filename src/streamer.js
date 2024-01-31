@@ -9,11 +9,20 @@ function startStreaming(rtmpsUrl, rtmpsKey, socket) {
             socket.emit('message', `Error: ${error.message}`);
             return;
         }
-        if (stderr) {
-            socket.emit('message', `FFmpeg: ${stderr}`); // Send FFmpeg messages to the socket
-        }
+    });
+
+    // Emit a message right after starting the FFmpeg process
+    socket.emit('message', 'Attempting to start streaming...');
+
+    ffmpegProcess.stderr.on('data', (data) => {
+        socket.emit('message', `FFmpeg: ${data}`);
+    });
+
+    ffmpegProcess.on('close', (code) => {
+        socket.emit('message', `FFmpeg process exited with code ${code}`);
     });
 }
+
 
 
 function stopStreaming(socket) {
