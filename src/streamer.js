@@ -17,17 +17,26 @@ function startStreaming(rtmpsUrl, rtmpsKey, socket) {
 
 function stopStreaming(socket) {
     if (ffmpegProcess) {
-        console.log('Sending SIGINT to FFmpeg process...');
+        console.log('Attempting to stop FFmpeg process...');
+        socket.emit('message', 'Attempting to stop FFmpeg process...');
+
         ffmpegProcess.kill('SIGINT');
-        ffmpegProcess.on('close', () => {
-            socket.emit('message', 'Streaming stopped');
-            console.log('FFmpeg process terminated.');
+
+        ffmpegProcess.on('close', (code, signal) => {
+            console.log(`FFmpeg process terminated with code: ${code}, signal: ${signal}`);
+            socket.emit('message', `FFmpeg process terminated with code: ${code}, signal: ${signal}`);
+        });
+
+        ffmpegProcess.on('error', (err) => {
+            console.log(`Failed to stop FFmpeg process: ${err}`);
+            socket.emit('message', `Failed to stop FFmpeg process: ${err}`);
         });
     } else {
         console.log('No FFmpeg process to stop.');
         socket.emit('message', 'No streaming process to stop');
     }
 }
+
 
 module.exports = {
     startStreaming,
