@@ -1,31 +1,33 @@
-const {
-    exec
-} = require('child_process');
+const { exec } = require('child_process');
 
 let ffmpegProcess; // Define the variable at the top level
 
-function startStreaming(rtmpsUrl, rtmpsKey, logCallback) {
+function startStreaming(rtmpsUrl, rtmpsKey, socket) {
     const ffmpegCommand = `ffmpeg -stream_loop -1 -re -i /usr/src/app/src/public/testvideo.mp4 -c copy -f flv ${rtmpsUrl}/${rtmpsKey}`;
     ffmpegProcess = exec(ffmpegCommand, (error, stdout, stderr) => {
         if (error) {
-            logCallback(`Error: ${error.message}`);
+            socket.emit('message', `Error: ${error.message}`);
             return;
         }
         if (stderr) {
-            logCallback(`FFmpeg: ${stderr}`); // Send FFmpeg messages to the log callback
+            socket.emit('message', `FFmpeg: ${stderr}`); // Send FFmpeg messages to the socket
         }
     });
 }
 
-function stopStreaming(logCallback) {
+function stopStreaming(socket) {
     if (ffmpegProcess) {
+        console.log('Sending SIGINT to FFmpeg process...');
         ffmpegProcess.kill('SIGINT');
-        logCallback('Streaming stopped');
+        ffmpegProcess.on('close', () => {
+            socket.emit('message', 'Streaming stopped');
+            console.log('FFmpeg process terminated.');
+        });
     } else {
-        logCallback('No streaming process to stop');
+        console.log('No FFmpeg process to stop.');
+        socket.emit('message', 'No streaming process to stop');
     }
 }
-
 
 module.exports = {
     startStreaming,

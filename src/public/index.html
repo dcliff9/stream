@@ -1,16 +1,13 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Video Stream</title>
 </head>
-
 <body>
     <label for="rtmpsUrl">RTMPS URL:</label>
     <input type="text" id="rtmpsUrl" name="rtmpsUrl">
     <label for="rtmpsKey">RTMPS Key:</label>
     <input type="text" id="rtmpsKey" name="rtmpsKey">
-
 
     <button id="testStreamButton">Test Stream</button>
     <button id="stopStreamButton">Stop Stream</button>
@@ -18,46 +15,35 @@
     <br><br>Debug :<br>
     <textarea id="debugLog" rows="10" cols="50" readonly></textarea>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Function to append messages to the debug log text area
+        const socket = io();
+
+        socket.on('message', function(msg) {
+            appendToDebugLog(msg);
+        });
+
         function appendToDebugLog(message) {
             const debugLog = document.getElementById('debugLog');
             debugLog.value += message + '\n'; // Append the message and a newline
             debugLog.scrollTop = debugLog.scrollHeight; // Scroll to the bottom
         }
 
-        // Event listener for the Test Stream button
         document.getElementById('testStreamButton').addEventListener('click', function() {
             const rtmpsUrl = document.getElementById('rtmpsUrl').value;
             const rtmpsKey = document.getElementById('rtmpsKey').value;
             fetch('/start-streaming', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        rtmpsUrl,
-                        rtmpsKey
-                    }) // include RTMPS info
-                })
-                .then(response => response.text())
-                .then(data => appendToDebugLog(data)) // Append data to debug log
-                .catch(error => appendToDebugLog('Error: ' + error)); // Append error to debug log
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ rtmpsUrl, rtmpsKey })
+            });
         });
 
-        // Event listener for the Stop Stream button
         document.getElementById('stopStreamButton').addEventListener('click', function() {
-            fetch('/stop-streaming', {
-                    method: 'POST'
-                })
-                .then(response => response.text())
-                .then(data => appendToDebugLog(data)) // Append data to debug log
-                .catch(error => appendToDebugLog('Error: ' + error)); // Append error to debug log
+            fetch('/stop-streaming', { method: 'POST' });
         });
     </script>
-
-
-
 </body>
-
 </html>
