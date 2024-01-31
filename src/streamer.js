@@ -19,18 +19,12 @@ function startStreaming(rtmpsUrl, rtmpsKey, logCallback) {
 
 function stopStreaming(logCallback) {
     if (ffmpegProcess) {
-        console.log('Sending SIGINT to FFmpeg process...');
         ffmpegProcess.kill('SIGINT');
-        ffmpegProcess.on('close', () => {
-            logCallback('Streaming stopped');
-            console.log('FFmpeg process terminated.');
-        });
+        logCallback('Streaming stopped');
     } else {
-        console.log('No FFmpeg process to stop.');
         logCallback('No streaming process to stop');
     }
 }
-
 
 
 module.exports = {
