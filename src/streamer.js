@@ -5,11 +5,7 @@ const {
 let ffmpegProcess; // Define the variable at the top level
 
 function startStreaming(rtmpsUrl, rtmpsKey, logCallback) {
-    const ffmpegCommand = `ffmpeg -re -i /usr/src/app/src/public/testvideo.mp4 ` +
-    `-c:v libx264 -b:v 3000k -maxrate 3000k -bufsize 6000k ` +  // Video bitrate 3000 kbps max
-    `-c:a aac -b:a 192k -ar 48000 ` +                           // Audio bitrate 192 kbps, sample rate 48 kHz
-    `-s 1920x1080 -r 30 ` +                                     // Resolution 1920x1080 and 30 fps
-    `-f flv ${rtmpsUrl}/${rtmpsKey}`;                           // Output format and RTMPS destination
+    const ffmpegCommand = `ffmpeg -re -i /usr/src/app/src/public/testvideo.mp4 -c copy -f flv ${rtmpsUrl}/${rtmpsKey}`;
     ffmpegProcess = exec(ffmpegCommand, (error, stdout, stderr) => {
         if (error) {
             logCallback(`Error: ${error.message}`);
