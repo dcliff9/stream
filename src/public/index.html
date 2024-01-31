@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Video Stream</title>
 </head>
+
 <body>
     <label for="rtmpsUrl">RTMPS URL:</label>
     <input type="text" id="rtmpsUrl" name="rtmpsUrl">
@@ -40,25 +42,49 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ rtmpsUrl, rtmpsKey })
+                body: JSON.stringify({
+                    rtmpsUrl,
+                    rtmpsKey
+                })
             });
         });
 
         document.getElementById('stopStreamButton').addEventListener('click', function() {
-            fetch('/stop-streaming', { method: 'POST' });
+            fetch('/stop-streaming', {
+                method: 'POST'
+            });
         });
 
         document.getElementById('uploadForm').addEventListener('submit', function(event) {
             event.preventDefault();
             const formData = new FormData(this);
+            const intervalId = showUploadingProgress(); // Start showing upload progress
             fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(data => appendToDebugLog(data))
-            .catch(error => appendToDebugLog('Upload Failed: ' + error));
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => {
+                    clearInterval(intervalId); // Stop showing upload progress
+                    appendToDebugLog(data); // Show the response message
+                })
+                .catch(error => {
+                    clearInterval(intervalId); // Stop showing upload progress
+                    appendToDebugLog('Upload Failed: ' + error);
+                });
         });
+
+
+        function showUploadingProgress() {
+            const debugLog = document.getElementById('debugLog');
+            debugLog.value += 'Uploading';
+            const intervalId = setInterval(() => {
+                debugLog.value += '.';
+            }, 500); // Append a dot every 500ms
+
+            return intervalId;
+        }
     </script>
 </body>
+
 </html>

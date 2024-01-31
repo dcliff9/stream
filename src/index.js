@@ -4,7 +4,19 @@ const port = process.env.PORT || 3000;
 const { exec } = require("child_process");
 const path = require('path');
 const multer = require('multer');
-const upload = multer({ dest: '/usr/src/app/src/public/videos' });
+
+// Configure multer for custom file naming and directory
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, '/usr/src/app/src/public/videos');
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname); // Use the original file name
+    }
+});
+
+const upload = multer({ storage: storage }); // Use the custom storage configuration
+
 
 
 
@@ -43,9 +55,9 @@ io.on('connection', socket => {
 });
 
 app.post('/upload', upload.single('file'), (req, res) => {
-    console.log(`File uploaded: ${req.file.path}`);
-    io.emit('message', 'File uploaded successfully.');  // Emitting message to the client
-    res.send('File uploaded successfully.');
+    console.log(`File uploaded: ${req.file.filename}`);
+    io.emit('message', `File uploaded successfully: ${req.file.filename}`);  // Emitting message to the client with file name
+    res.send(`File uploaded successfully: ${req.file.filename}`);
 });
 
 // Start the server
