@@ -1,5 +1,3 @@
-const server = require('http').createServer(app);
-const io = require('socket.io')(server);
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
@@ -7,6 +5,9 @@ const {
     exec
 } = require("child_process");
 const path = require('path');
+
+const server = require('http').createServer(app);
+const io = require('socket.io')(server);
 
 const {
     startStreaming,
