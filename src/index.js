@@ -3,6 +3,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const { exec } = require("child_process");
 const path = require('path');
+const { startStreaming } = require('./streamer'); // make sure the path is correct
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -20,6 +21,12 @@ app.get('/ffmpeg-version', (req, res) => {
     }
     res.send(`FFmpeg version: ${stdout}`);
   });
+});
+
+// Endpoint to start streaming
+app.post('/start-streaming', (req, res) => {
+    startStreaming();
+    res.send('Streaming started');
 });
 
 app.listen(port, () => {
