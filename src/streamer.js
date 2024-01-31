@@ -4,8 +4,8 @@ const {
 
 let ffmpegProcess; // Define the variable at the top level
 
-function startStreaming(srtUrl, logCallback) {
-    const ffmpegCommand = `ffmpeg -re -i /usr/src/app/src/public/testvideo.mp4 -c copy -f mpegts ${srtUrl}`;
+function startStreaming(rtmpsUrl, rtmpsKey, logCallback) {
+    const ffmpegCommand = `ffmpeg -re -i /usr/src/app/src/public/testvideo.mp4 -c copy -f flv ${rtmpsUrl}/${rtmpsKey}`;
     ffmpegProcess = exec(ffmpegCommand, (error, stdout, stderr) => {
         if (error) {
             logCallback(`Error: ${error.message}`);

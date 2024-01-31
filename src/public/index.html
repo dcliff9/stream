@@ -7,7 +7,11 @@
 
 <body>
     <label for="srtUrl">SRT URL:</label>
-    <input type="text" id="srtUrl" name="srtUrl">
+    <label for="rtmpsUrl">RTMPS URL:</label>
+    <input type="text" id="rtmpsUrl" name="rtmpsUrl">
+    <label for="rtmpsKey">RTMPS Key:</label>
+    <input type="text" id="rtmpsKey" name="rtmpsKey">
+
 
     <button id="testStreamButton">Test Stream</button>
     <button id="stopStreamButton">Stop Stream</button>
@@ -25,15 +29,17 @@
 
         // Event listener for the Test Stream button
         document.getElementById('testStreamButton').addEventListener('click', function() {
-            const srtUrl = document.getElementById('srtUrl').value;
+            const rtmpsUrl = document.getElementById('rtmpsUrl').value;
+            const rtmpsKey = document.getElementById('rtmpsKey').value;
             fetch('/start-streaming', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        srtUrl
-                    })
+                        rtmpsUrl,
+                        rtmpsKey
+                    }) // include RTMPS info
                 })
                 .then(response => response.text())
                 .then(data => appendToDebugLog(data)) // Append data to debug log

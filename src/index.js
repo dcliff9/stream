@@ -33,14 +33,15 @@ app.use(express.json()); // to parse JSON bodies
 
 app.post('/start-streaming', (req, res) => {
     const {
-        srtUrl
-    } = req.body;
-    if (srtUrl) {
-        startStreaming(srtUrl, (logMessage) => {
+        rtmpsUrl,
+        rtmpsKey
+    } = req.body; // Extract RTMPS info from the request body
+    if (rtmpsUrl && rtmpsKey) {
+        startStreaming(rtmpsUrl, rtmpsKey, (logMessage) => {
             res.send(logMessage); // Send log message in the response
         });
     } else {
-        res.status(400).send('SRT URL is required');
+        res.status(400).send('RTMPS URL and key are required');
     }
 });
 
