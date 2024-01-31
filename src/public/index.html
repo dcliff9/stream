@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Video Stream</title>
 </head>
+
 <body>
     <label for="rtmpsUrl">RTMPS URL:</label>
     <input type="text" id="rtmpsUrl" name="rtmpsUrl">
@@ -11,6 +13,12 @@
 
     <button id="testStreamButton">Test Stream</button>
     <button id="stopStreamButton">Stop Stream</button>
+
+    <form id="uploadForm" enctype="multipart/form-data" action="/upload" method="post">
+        <input type="file" name="file" accept=".mp4" required />
+        <button type="submit">Upload File</button>
+    </form>
+
 
     <br><br>Debug :<br>
     <textarea id="debugLog" rows="10" cols="50" readonly></textarea>
@@ -37,13 +45,19 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ rtmpsUrl, rtmpsKey })
+                body: JSON.stringify({
+                    rtmpsUrl,
+                    rtmpsKey
+                })
             });
         });
 
         document.getElementById('stopStreamButton').addEventListener('click', function() {
-            fetch('/stop-streaming', { method: 'POST' });
+            fetch('/stop-streaming', {
+                method: 'POST'
+            });
         });
     </script>
 </body>
+
 </html>

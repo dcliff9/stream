@@ -3,6 +3,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 const { exec } = require("child_process");
 const path = require('path');
+const multer = require('multer');
+const upload = multer({ dest: 'public/' }); // files will be saved to 'public' directory
+
 
 // Socket.io setup
 const server = require('http').createServer(app);
@@ -36,6 +39,11 @@ app.post('/stop-streaming', (req, res) => {
 // Handle socket connection
 io.on('connection', socket => {
     console.log('a user connected');
+});
+
+app.post('/upload', upload.single('file'), (req, res) => {
+    console.log(`File uploaded: ${req.file.path}`);
+    res.send('File uploaded successfully.');
 });
 
 // Start the server
