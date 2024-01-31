@@ -6,21 +6,28 @@
 </head>
 
 <body>
+
+    <div id="fileList">
+        <!-- Uploaded files will be listed here -->
+    </div>
+    <br>
     <label for="rtmpsUrl">RTMPS URL:</label>
     <input type="text" id="rtmpsUrl" name="rtmpsUrl">
     <label for="rtmpsKey">RTMPS Key:</label>
     <input type="text" id="rtmpsKey" name="rtmpsKey">
+    <br>
+
+
     <button id="testStreamButton">Test Stream</button>
     <button id="stopStreamButton">Stop Stream</button>
+    <br>
 
     <form id="uploadForm" enctype="multipart/form-data">
         <input type="file" name="file" accept=".mp4" required />
         <button type="submit">Upload File</button>
     </form>
 
-    <div id="fileList">
-        <!-- Uploaded files will be listed here -->
-    </div>
+
 
     <br><br>Debug :<br>
     <textarea id="debugLog" rows="10" cols="50" readonly></textarea>
