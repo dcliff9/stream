@@ -24,9 +24,16 @@ app.get('/ffmpeg-version', (req, res) => {
 });
 
 // Endpoint to start streaming
+app.use(express.json()); // to parse JSON bodies
+
 app.post('/start-streaming', (req, res) => {
-    startStreaming();
-    res.send('Streaming started');
+    const { srtUrl } = req.body; // Extract the SRT URL from the request body
+    if (srtUrl) {
+        startStreaming(srtUrl);
+        res.send('Streaming started with SRT URL: ' + srtUrl);
+    } else {
+        res.status(400).send('SRT URL is required');
+    }
 });
 
 // Endpoint to stop streaming

@@ -6,14 +6,24 @@
 </head>
 
 <body>
+    <label for="srtUrl">SRT URL:</label>
+    <input type="text" id="srtUrl" name="srtUrl">
+
     <button id="testStreamButton">Test Stream</button>
     <button id="stopStreamButton">Stop Stream</button>
 
 
     <script>
         document.getElementById('testStreamButton').addEventListener('click', function() {
+            const srtUrl = document.getElementById('srtUrl').value;
             fetch('/start-streaming', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        srtUrl
+                    })
                 })
                 .then(response => response.text())
                 .then(data => console.log(data))
