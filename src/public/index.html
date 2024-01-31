@@ -10,7 +10,11 @@
     <div id="fileList">
         <!-- Uploaded files will be listed here -->
     </div>
-    <br>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".mp4" required />
+        <button type="submit">Upload File</button>
+    </form>
+    <br><br><br>
     <label for="rtmpsUrl">RTMPS URL:</label>
     <input type="text" id="rtmpsUrl" name="rtmpsUrl" value="rtmps://live.hitchstream.com:443/live/">
 
@@ -24,10 +28,7 @@
     <button id="stopStreamButton">Stop Stream</button>
     <br>
 
-    <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".mp4" required />
-        <button type="submit">Upload File</button>
-    </form>
+    
 
 
 
