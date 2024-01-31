@@ -2,9 +2,11 @@ const {
     exec
 } = require('child_process');
 
+let ffmpegProcess; // Define the variable at the top level
+
 function startStreaming(srtUrl) {
     const ffmpegCommand = `ffmpeg -re -i public/testvideo.mp4 -c copy -f mpegts ${srtUrl}`;
-    exec(ffmpegCommand, (error, stdout, stderr) => {
+    ffmpegProcess = exec(ffmpegCommand, (error, stdout, stderr) => { // Assign the process here
         if (error) {
             console.error(`Error: ${error.message}`);
             return;
