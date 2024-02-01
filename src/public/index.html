@@ -70,8 +70,11 @@
 <body>
 
     <div id="fileList">
-        <!-- Uploaded files will be listed here -->
+        <select id="fileListSelect">
+            <option>No Videos</option>
+        </select>
     </div>
+
     <form id="uploadForm" enctype="multipart/form-data">
         <input type="file" name="file" accept=".mp4" required />
         <button type="submit">Upload File</button>
@@ -169,23 +172,25 @@
             fetch('/list-videos')
                 .then(response => response.json())
                 .then(files => {
-                    const fileListDiv = document.getElementById('fileList'); // Ensure this ID matches your HTML element
-                    fileListDiv.innerHTML = ''; // Clear existing content
-                    const select = document.createElement('select');
-                    select.name = 'fileList';
-                    select.id = 'fileListSelect';
+                    const fileListSelect = document.getElementById('fileListSelect');
+                    fileListSelect.innerHTML = ''; // Clear existing content
 
-                    files.forEach(file => {
-                        const option = document.createElement('option');
-                        option.value = file;
-                        option.text = file;
-                        select.appendChild(option);
-                    });
-
-                    fileListDiv.appendChild(select);
+                    if (files.length === 0) {
+                        const noVideoOption = document.createElement('option');
+                        noVideoOption.textContent = 'No Videos';
+                        fileListSelect.appendChild(noVideoOption);
+                    } else {
+                        files.forEach(file => {
+                            const option = document.createElement('option');
+                            option.value = file;
+                            option.text = file;
+                            fileListSelect.appendChild(option);
+                        });
+                    }
                 })
                 .catch(error => appendToDebugLog('Error fetching file list: ' + error));
         }
+
 
         fetchAndDisplayFileList(); // Call this function to fetch and display the file list
     </script>

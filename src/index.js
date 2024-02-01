@@ -66,13 +66,15 @@ app.get('/list-videos', (req, res) => {
 
     fs.readdir(directoryPath, function (err, files) {
         if (err) {
-            console.log('Error getting directory information.');
-            res.status(500).send('Unable to list files');
+            console.error('Error getting directory information: ', err);
+            res.status(500).send('Unable to list files due to server error');
         } else {
-            res.send(files);
+            const videoFiles = files.filter(file => file.match(/\.(mp4|avi)$/)); // Adjust regex as needed
+            res.send(videoFiles);
         }
     });
 });
+
 
 // Start the server
 server.listen(port, () => {
