@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const apiRoutes = require('./routes/apiRoutes');
 const port = process.env.PORT || 3000;
 const {
     exec
@@ -15,6 +16,7 @@ app.use(cors({
     credentials: true
 }));
 
+app.use('/api', apiRoutes); // Mount the API routes under the '/api' path
 
 // Configure multer for custom file naming and directory
 const storage = multer.diskStorage({
