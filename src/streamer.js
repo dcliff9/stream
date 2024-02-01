@@ -1,7 +1,6 @@
 const { exec } = require('child_process');
 
 let ffmpegProcess; // Define the variable at the top level
-let ffmpegPID;
 
 function startStreaming(rtmpsUrl, rtmpsKey, io, filename) {
     console.log(`Start streaming called with filename: ${filename}`); // Log the received filename
@@ -41,48 +40,33 @@ function startStreaming(rtmpsUrl, rtmpsKey, io, filename) {
 
 
 function stopStreaming(socket) {
-    if (ffmpegProcess && !ffmpegProcess.killed) {
-        const pid = ffmpegProcess.pid;
-        console.log(`Attempting to stop FFmpeg process with PID: ${pid}`);
-        socket.emit('message', `Attempting to stop FFmpeg process with PID: ${pid}`);
+    if (ffmpegProcess) {
+        console.log('Attempting to stop FFmpeg process...');
+        socket.emit('message', 'Attempting to stop FFmpeg process...');
 
         // Try sending SIGTERM first
         ffmpegProcess.kill('SIGTERM');
 
         // Set a timeout to forcefully kill the process if it doesn't exit
         setTimeout(() => {
-            try {
-                process.kill(pid, 0); // Check if the process is still running
-                console.log(`Forcefully terminating FFmpeg process with PID: ${pid}`);
-                process.kill(pid, 'SIGKILL'); // Forcefully kill the process
+            console.log('Forcefully terminating FFmpeg process...');
+            exec(`pkill -f ffmpeg`, (error, stdout, stderr) => {
+                if (error) {
+                    console.log(`Error while forcefully terminating FFmpeg: ${error}`);
+                    socket.emit('message', `Error while forcefully terminating FFmpeg: ${error}`);
+                    return;
+                }
+                if (stderr) {
+                    console.log(`FFmpeg termination STDERR: ${stderr}`);
+                }
                 console.log('FFmpeg process forcefully terminated.');
                 socket.emit('message', 'FFmpeg process forcefully terminated.');
-            } catch (error) {
-                if (error.code === 'ESRCH') {
-                    // Process is not running
-                    console.log(`FFmpeg process with PID ${pid} was not running or already terminated.`);
-                    socket.emit('message', `FFmpeg process with PID ${pid} was not running or already terminated.`);
-                } else {
-                    // Other errors, use pkill as a failsafe
-                    console.log(`Error while forcefully terminating FFmpeg with PID ${pid}: ${error}, attempting pkill...`);
-                    exec(`pkill -f ffmpeg`, (pkillError, stdout, stderr) => {
-                        if (pkillError) {
-                            console.log(`Error while forcefully terminating FFmpeg with pkill: ${pkillError}`);
-                            socket.emit('message', `Error while forcefully terminating FFmpeg with pkill: ${pkillError}`);
-                            return;
-                        }
-                        if (stderr) {
-                            console.log(`FFmpeg termination STDERR: ${stderr}`);
-                        }
-                        console.log('FFmpeg process forcefully terminated with pkill.');
-                        socket.emit('message', 'FFmpeg process forcefully terminated with pkill.');
-                    });
-                }
-            }
+            });
         }, 5000); // 5 seconds timeout for graceful shutdown
+
     } else {
         console.log('No FFmpeg process to stop.');
-        socket.emit('message', 'No FFmpeg process to stop.');
+        socket.emit('message', 'No streaming process to stop');
     }
 }
 
