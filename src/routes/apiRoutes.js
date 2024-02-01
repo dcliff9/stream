@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { stopStreaming } = require('../streamer');
 const { startStreaming } = require('../streamer'); 
 const { io } = require('../index.js'); 
 
@@ -40,6 +41,16 @@ router.post('/start-streaming', authenticate, (req, res) => {
 });
 
 
-// ... other API routes
+// Define the /stop-streaming API endpoint
+router.post('/stop-streaming', authenticate, (req, res) => {
+    console.log(`API Received stop request`);
+    
+    // Call the stopStreaming function to handle stopping the stream
+    // Pass the io instance for real-time communication
+    stopStreaming(io);
+    
+    // Respond to the client indicating the stream has been stopped
+    res.json({ message: 'Streaming stopped successfully' });
+});
 
 module.exports = router;
