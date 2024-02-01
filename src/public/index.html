@@ -118,6 +118,8 @@
         document.getElementById('streamToggle').addEventListener('change', function() {
             const rtmpsUrl = document.getElementById('rtmpsUrl').value;
             const rtmpsKey = document.getElementById('rtmpsKey').value;
+            const selectedVideoFile = document.getElementById('fileListSelect').value; // Get the selected video file
+
             if (this.checked) {
                 fetch('/start-streaming', {
                     method: 'POST',
@@ -126,7 +128,8 @@
                     },
                     body: JSON.stringify({
                         rtmpsUrl,
-                        rtmpsKey
+                        rtmpsKey,
+                        videoFile: selectedVideoFile // Include the selected video file in the request
                     })
                 });
             } else {
@@ -135,6 +138,7 @@
                 });
             }
         });
+
 
 
         document.getElementById('uploadForm').addEventListener('submit', function(event) {

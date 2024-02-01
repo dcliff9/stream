@@ -36,14 +36,28 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 // Start streaming endpoint
+
+const validVideoExtensions = /\.(mp4|mov)$/;
+
 app.post('/start-streaming', (req, res) => {
-    const { rtmpsUrl, rtmpsKey } = req.body;
-    if (rtmpsUrl && rtmpsKey) {
-        startStreaming(rtmpsUrl, rtmpsKey, io); // Pass io instance for real-time communication
+    let { videoFile, rtmpsUrl, rtmpsKey } = req.body;
+
+    // Check for valid video file extension
+    if (!validVideoExtensions.test(videoFile)) {
+        return res.status(400).send('Invalid video file type.');
+    }
+
+    // Remove any path traversal characters
+    videoFile = videoFile.replace(/^.*[\\\/]/, '');
+
+    if (rtmpsUrl && rtmpsKey && videoFile) {
+        startStreaming(rtmpsUrl, rtmpsKey, io, videoFile); // Pass the video filename to startStreaming
+        res.send({ message: 'Streaming started' });
     } else {
-        res.status(400).send('RTMPS URL and key are required');
+        res.status(400).send('RTMPS URL, key, and video file are required');
     }
 });
+
 
 // Stop streaming endpoint
 app.post('/stop-streaming', (req, res) => {
