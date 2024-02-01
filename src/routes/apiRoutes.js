@@ -12,6 +12,7 @@ const authenticate = (req, res, next) => {
     }
 };
 
+const validVideoExtensions = /\.(mp4|mov)$/;
 // Define your API routes
 
 
