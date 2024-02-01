@@ -16,6 +16,7 @@ app.use(cors({
     credentials: true
 }));
 
+app.use(express.json());
 app.use('/api', apiRoutes); // Mount the API routes under the '/api' path
 
 // Configure multer for custom file naming and directory
