@@ -42,18 +42,18 @@ function startStreaming(rtmpsUrl, rtmpsKey, io, filename) {
 
 function stopStreaming(socket) {
     if (ffmpegProcess && !ffmpegProcess.killed) {
-        console.log(`Attempting to stop FFmpeg process with PID: ${ffmpegPID}`);
-        socket.emit('message', `Attempting to stop FFmpeg process with PID: ${ffmpegPID}`);
+        console.log(`Attempting to stop FFmpeg process with PID: ${ffmpegProcess.pid}`);
+        socket.emit('message', `Attempting to stop FFmpeg process with PID: ${ffmpegProcess.pid}`);
 
         // Try sending SIGTERM first
-        process.kill(ffmpegPID, 'SIGTERM');
+        ffmpegProcess.kill('SIGTERM');
 
         // Set a timeout to forcefully kill the process if it doesn't exit
         setTimeout(() => {
             try {
-                process.kill(ffmpegPID, 0); // Check if the process is still running
-                console.log(`Forcefully terminating FFmpeg process with PID: ${ffmpegPID}`);
-                process.kill(ffmpegPID, 'SIGKILL'); // Forcefully kill the process
+                process.kill(ffmpegProcess.pid, 0); // Check if the process is still running
+                console.log(`Forcefully terminating FFmpeg process with PID: ${ffmpegProcess.pid}`);
+                ffmpegProcess.kill('SIGKILL'); // Forcefully kill the process
                 console.log('FFmpeg process forcefully terminated.');
                 socket.emit('message', 'FFmpeg process forcefully terminated.');
             } catch (error) {
@@ -73,6 +73,7 @@ function stopStreaming(socket) {
         socket.emit('message', 'No FFmpeg process to stop.');
     }
 }
+
 
 
 
