@@ -1,5 +1,7 @@
 const express = require('express');
 const app = express();
+const io = require('socket.io')(server);
+module.exports.io = io;
 const apiRoutes = require('./routes/apiRoutes');
 const port = process.env.PORT || 3000;
 const {
@@ -38,8 +40,7 @@ const upload = multer({
 
 // Socket.io setup
 const server = require('http').createServer(app);
-const io = require('socket.io')(server);
-module.exports.io = io;
+
 
 // Streamer functions
 const {
