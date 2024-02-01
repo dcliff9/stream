@@ -41,7 +41,7 @@ const validVideoExtensions = /\.(mp4|mov)$/;
 
 app.post('/start-streaming', (req, res) => {
     let { videoFile, rtmpsUrl, rtmpsKey } = req.body;
-
+    console.log(`Received - VideoFile: ${videoFile}, RTMPS URL: ${rtmpsUrl}, RTMPS Key: ${rtmpsKey}`);
     // Check for valid video file extension
     if (!validVideoExtensions.test(videoFile)) {
         return res.status(400).send('Invalid video file type.');
