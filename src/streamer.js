@@ -62,7 +62,7 @@ function stopStreaming(socket) {
                 console.log('FFmpeg process forcefully terminated.');
                 socket.emit('message', 'FFmpeg process forcefully terminated.');
             });
-        }, 5000); // 5 seconds timeout for graceful shutdown
+        }, 15000); // 5 seconds timeout for graceful shutdown
 
     } else {
         console.log('No FFmpeg process to stop.');
