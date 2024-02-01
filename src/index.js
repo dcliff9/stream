@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 module.exports.io = io;
 const apiRoutes = require('./routes/apiRoutes');
@@ -38,8 +39,7 @@ const upload = multer({
 
 
 
-// Socket.io setup
-const server = require('http').createServer(app);
+
 
 
 // Streamer functions
