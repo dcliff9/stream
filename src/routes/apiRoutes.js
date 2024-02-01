@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { startStreaming } = require('../streamer'); // Ensure correct path
+const { startStreaming } = require('../streamer'); 
+const { io } = require('../index.js'); 
+
 
 // Middleware for API Key verification
 const authenticate = (req, res, next) => {
@@ -30,7 +32,7 @@ router.post('/start-streaming', authenticate, (req, res) => {
     videoFile = videoFile.replace(/^.*[\\\/]/, '');
 
     if (rtmpsUrl && rtmpsKey && videoFile) {
-        startStreaming(rtmpsUrl, rtmpsKey, videoFile); // Ensure this function matches your actual implementation
+        startStreaming(rtmpsUrl, rtmpsKey, io, videoFile); 
         res.json({ message: 'Streaming started' });
     } else {
         res.status(400).json({ message: 'RTMPS URL, key, and video file are required' });

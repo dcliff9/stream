@@ -39,6 +39,7 @@ const upload = multer({
 // Socket.io setup
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
+module.exports.io = io;
 
 // Streamer functions
 const {
