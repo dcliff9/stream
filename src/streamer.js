@@ -44,31 +44,26 @@ function stopStreaming(socket) {
         console.log('Attempting to stop FFmpeg process...');
         socket.emit('message', 'Attempting to stop FFmpeg process...');
 
-        // Try sending SIGTERM first
-        ffmpegProcess.kill('SIGTERM');
-
-        // Set a timeout to forcefully kill the process if it doesn't exit
-        setTimeout(() => {
-            console.log('Forcefully terminating FFmpeg process...');
-            exec(`pkill -f ffmpeg`, (error, stdout, stderr) => {
-                if (error) {
-                    console.log(`Error while forcefully terminating FFmpeg: ${error}`);
-                    socket.emit('message', `Error while forcefully terminating FFmpeg: ${error}`);
-                    return;
-                }
-                if (stderr) {
-                    console.log(`FFmpeg termination STDERR: ${stderr}`);
-                }
-                console.log('FFmpeg process forcefully terminated.');
-                socket.emit('message', 'FFmpeg process forcefully terminated.');
-            });
-        }, 15000); // 5 seconds timeout for graceful shutdown
-
+        // Directly use pkill to forcefully terminate the FFmpeg process
+        console.log('Forcefully terminating FFmpeg process...');
+        exec(`pkill -f ffmpeg`, (error, stdout, stderr) => {
+            if (error) {
+                console.log(`Error while forcefully terminating FFmpeg: ${error}`);
+                socket.emit('message', `Error while forcefully terminating FFmpeg: ${error}`);
+                return;
+            }
+            if (stderr) {
+                console.log(`FFmpeg termination STDERR: ${stderr}`);
+            }
+            console.log('FFmpeg process forcefully terminated.');
+            socket.emit('message', 'FFmpeg process forcefully terminated.');
+        });
     } else {
         console.log('No FFmpeg process to stop.');
         socket.emit('message', 'No streaming process to stop');
     }
 }
+
 
 
 
