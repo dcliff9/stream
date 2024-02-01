@@ -1,10 +1,20 @@
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
-const { exec } = require("child_process");
+const {
+    exec
+} = require("child_process");
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+
+const cors = require('cors');
+app.use(cors({
+    origin: 'https://hitchstream.com', // Replace with your WordPress site's URL
+    methods: 'GET,POST,PUT,DELETE',
+    credentials: true
+}));
+
 
 // Configure multer for custom file naming and directory
 const storage = multer.diskStorage({
@@ -16,7 +26,9 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage: storage }); // Use the custom storage configuration
+const upload = multer({
+    storage: storage
+}); // Use the custom storage configuration
 
 
 
@@ -26,7 +38,10 @@ const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 
 // Streamer functions
-const { startStreaming, stopStreaming } = require('./streamer');
+const {
+    startStreaming,
+    stopStreaming
+} = require('./streamer');
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -40,7 +55,11 @@ app.use(express.json());
 const validVideoExtensions = /\.(mp4|mov)$/;
 
 app.post('/start-streaming', (req, res) => {
-    let { videoFile, rtmpsUrl, rtmpsKey } = req.body;
+    let {
+        videoFile,
+        rtmpsUrl,
+        rtmpsKey
+    } = req.body;
     console.log(`Received - VideoFile: ${videoFile}, RTMPS URL: ${rtmpsUrl}, RTMPS Key: ${rtmpsKey}`);
     // Check for valid video file extension
     if (!validVideoExtensions.test(videoFile)) {
@@ -52,7 +71,9 @@ app.post('/start-streaming', (req, res) => {
 
     if (rtmpsUrl && rtmpsKey && videoFile) {
         startStreaming(rtmpsUrl, rtmpsKey, io, videoFile); // Pass the video filename to startStreaming
-        res.send({ message: 'Streaming started' });
+        res.send({
+            message: 'Streaming started'
+        });
     } else {
         res.status(400).send('RTMPS URL, key, and video file are required');
     }
@@ -71,8 +92,8 @@ io.on('connection', socket => {
 
 app.post('/upload', upload.single('file'), (req, res) => {
     console.log(`File uploaded: ${req.file.filename}`);
-    io.emit('message', `File uploaded successfully: ${req.file.filename}`);  // Emitting message to the client with file name
-    res.status(200).end(); 
+    io.emit('message', `File uploaded successfully: ${req.file.filename}`); // Emitting message to the client with file name
+    res.status(200).end();
 });
 
 app.get('/list-videos', (req, res) => {
