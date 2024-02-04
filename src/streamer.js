@@ -28,6 +28,7 @@ function startStreaming(rtmpsUrl, rtmpsKey, io, filename) {
         }
         streamState.isStreaming = true; // Update the state to true, as the stream started successfully
     });
+    streamState.isStreaming = true; 
 
     // Emit a message right after starting the FFmpeg process
     io.emit('message', 'Attempting to start streaming...');
@@ -40,6 +41,7 @@ function startStreaming(rtmpsUrl, rtmpsKey, io, filename) {
     ffmpegProcess.on('close', (code) => {
         console.log(`FFmpeg process exited with code ${code}`); // Log the exit code of FFmpeg
         io.emit('message', `FFmpeg process exited with code ${code}`);
+        streamState.isStreaming = false;
     });
 }
 
@@ -69,6 +71,7 @@ function stopStreaming(socket) {
         console.log('No FFmpeg process to stop.');
         socket.emit('message', 'No streaming process to stop');
     }
+    streamState.isStreaming = false; 
 }
 
 function isStreamActive() {
