@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { stopStreaming } = require('../streamer');
 const { startStreaming } = require('../streamer'); 
+const { isStreamActive } = require('../streamer'); 
+
+
 const { io } = require('../index.js'); 
 
 
@@ -52,5 +55,14 @@ router.post('/stop-streaming', authenticate, (req, res) => {
     // Respond to the client indicating the stream has been stopped
     res.json({ message: 'Streaming stopped successfully' });
 });
+
+router.get('/stream-state', (req, res) => {
+    const state = isStreamActive();
+    res.json({ isStreaming: state });
+});
+
+// Define the /list-videos API endpoint
+
+
 
 module.exports = router;

@@ -2,6 +2,10 @@ const { exec } = require('child_process');
 
 let ffmpegProcess; // Define the variable at the top level
 
+const streamState = {
+    isStreaming: false
+};
+
 function startStreaming(rtmpsUrl, rtmpsKey, io, filename) {
     console.log(`Start streaming called with filename: ${filename}`); // Log the received filename
     const videoPath = `/usr/src/app/src/public/videos/${filename}`; // Set the path directly
@@ -16,11 +20,13 @@ function startStreaming(rtmpsUrl, rtmpsKey, io, filename) {
         if (error) {
             console.error(`Error: ${error.message}`); // Log any errors from FFmpeg
             io.emit('message', `Error: ${error.message}`);
+            streamState.isStreaming = false; // Update the state to false, as the stream failed to start
             return;
         }
         if (stderr) {
             console.error(`FFmpeg STDERR: ${stderr}`); // Log any stderr from FFmpeg
         }
+        streamState.isStreaming = true; // Update the state to true, as the stream started successfully
     });
 
     // Emit a message right after starting the FFmpeg process
@@ -55,6 +61,7 @@ function stopStreaming(socket) {
             if (stderr) {
                 console.log(`FFmpeg termination STDERR: ${stderr}`);
             }
+            streamState.isStreaming = false;
             console.log('FFmpeg process forcefully terminated.');
             socket.emit('message', 'FFmpeg process forcefully terminated.');
         });
@@ -64,11 +71,14 @@ function stopStreaming(socket) {
     }
 }
 
-
+function isStreamActive() {
+    return streamState.isStreaming;
+}
 
 
 
 module.exports = {
     startStreaming,
-    stopStreaming
+    stopStreaming,
+    isStreamActive
 };
