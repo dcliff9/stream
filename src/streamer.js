@@ -13,7 +13,7 @@ function startStreaming(rtmpsUrl, rtmpsKey, io, filename) {
 
     // Emit a message to the client with the filename
     io.emit('message', `File ${filename} started streaming.`);
-    const ffmpegCommand = `ffmpeg -stream_loop -1 -re -i "${videoPath}" -c copy -f flv ${rtmpsUrl}/${rtmpsKey}`;
+    const ffmpegCommand = `ffmpeg -stream_loop -1 -re -i "${videoPath}" -c:v libx264 -b:v 3000k -c:a aac -b:a 160k -g 60 -f flv ${rtmpsUrl}/${rtmpsKey}`;
     console.log(`FFmpeg command: ${ffmpegCommand}`); // Log the FFmpeg command
 
     ffmpegProcess = exec(ffmpegCommand, (error, stdout, stderr) => {
