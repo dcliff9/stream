@@ -3,6 +3,7 @@ const router = express.Router();
 const { stopStreaming } = require('../streamer');
 const { startStreaming } = require('../streamer'); 
 const { isStreamActive } = require('../streamer'); 
+const fs = require('fs');
 
 
 const { io } = require('../index.js'); 
@@ -61,7 +62,23 @@ router.get('/stream-state', (req, res) => {
     res.json({ isStreaming: state });
 });
 
-// Define the /list-videos API endpoint
+// File list
+const videoFileFilter = /\.(mp4|avi|mkv)$/;
+
+router.get('/list-videos', (req, res) => {
+  const directoryPath = path.join(__dirname, 'public/videos'); 
+  fs.readdir(directoryPath, (err, files) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Error reading directory');
+      return;
+    }
+    
+    const videoFiles = files.filter(file => videoFileFilter.test(file));
+
+    res.json(videoFiles);
+  });
+});
 
 
 
