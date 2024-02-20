@@ -67,7 +67,7 @@ router.get('/stream-state', (req, res) => {
 const videoFileFilter = /\.(mp4|avi|mkv)$/;
 
 router.get('/list-videos', (req, res) => {
-  const directoryPath = path.join(__dirname, 'public/videos'); 
+  const directoryPath = path.join(__dirname, '..', 'public/videos'); 
   fs.readdir(directoryPath, (err, files) => {
     if (err) {
       console.error(err);
