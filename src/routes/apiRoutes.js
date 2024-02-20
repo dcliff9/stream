@@ -4,6 +4,7 @@ const { stopStreaming } = require('../streamer');
 const { startStreaming } = require('../streamer'); 
 const { isStreamActive } = require('../streamer'); 
 const fs = require('fs');
+const path = require('path');
 
 
 const { io } = require('../index.js'); 
