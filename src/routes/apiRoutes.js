@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { startStreaming, stopStreaming, isStreamActive } = require('../streamer');
+const { startStreaming, stopStreaming, getState } = require('../streamer');
 const fs = require('fs');
 const path = require('path');
-
-const { io } = require('../index.js');
 
 const VIDEO_DIR = path.join(__dirname, '..', 'public', 'videos');
 const validVideoExtensions = /\.(mp4|mov)$/i;
@@ -23,33 +21,49 @@ router.use(authenticate);
 
 // ── Health check (no side effects) ──────────────────────────────────
 router.get('/auth-check', (req, res) => {
-    res.json({ ok: true, isStreaming: isStreamActive() });
+    res.json({ ok: true });
 });
 
-// ── Start streaming ─────────────────────────────────────────────────
+// ── Start a placeholder stream for one live input ───────────────────
+// Body: { id, videoFile, rtmpsUrl, rtmpsKey }. `id` keys the process so each
+// live input is independent; it falls back to rtmpsKey if omitted.
 router.post('/start-streaming', (req, res) => {
-    let { videoFile, rtmpsUrl, rtmpsKey } = req.body;
+    let { id, videoFile, rtmpsUrl, rtmpsKey } = req.body || {};
     if (!validVideoExtensions.test(videoFile || '')) {
-        return res.status(400).json({ message: 'Invalid video file type.' });
+        return res.status(400).json({ message: 'Invalid or missing video file (.mp4/.mov).' });
     }
-    videoFile = String(videoFile).replace(/^.*[\\/]/, ''); // strip any path traversal
-    if (rtmpsUrl && rtmpsKey && videoFile) {
-        startStreaming(rtmpsUrl, rtmpsKey, io, videoFile);
-        res.json({ message: 'Streaming started' });
-    } else {
-        res.status(400).json({ message: 'RTMPS URL, key, and video file are required' });
+    if (!rtmpsUrl || !rtmpsKey) {
+        return res.status(400).json({ message: 'rtmpsUrl and rtmpsKey are required.' });
     }
+    videoFile = path.basename(String(videoFile)); // strip any path traversal
+    id = String(id || rtmpsKey);
+
+    const target = path.join(VIDEO_DIR, videoFile);
+    if (!target.startsWith(VIDEO_DIR + path.sep)) {
+        return res.status(400).json({ message: 'Invalid video path.' });
+    }
+    if (!fs.existsSync(target)) {
+        return res.status(404).json({ message: 'Video not found on streamer: ' + videoFile });
+    }
+
+    const r = startStreaming(id, target, rtmpsUrl, rtmpsKey);
+    res.json(Object.assign({ message: 'Streaming started' }, r, { id }));
 });
 
-// ── Stop streaming ──────────────────────────────────────────────────
+// ── Stop a placeholder stream ───────────────────────────────────────
 router.post('/stop-streaming', (req, res) => {
-    stopStreaming(io);
-    res.json({ message: 'Streaming stopped successfully' });
+    const id = String((req.body && (req.body.id || req.body.rtmpsKey)) || '');
+    if (!id) {
+        return res.status(400).json({ message: 'id (or rtmpsKey) is required.' });
+    }
+    const r = stopStreaming(id);
+    res.json(Object.assign({ message: 'Streaming stopped successfully' }, r, { id }));
 });
 
 // ── Stream state ────────────────────────────────────────────────────
+// ?id=<input> → state for one input; no id → { streams: { id: {...} } }.
 router.get('/stream-state', (req, res) => {
-    res.json({ isStreaming: isStreamActive() });
+    res.json(getState(String(req.query.id || '')));
 });
 
 // ── List placeholder videos ─────────────────────────────────────────

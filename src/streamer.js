@@ -1,88 +1,109 @@
-const { exec } = require('child_process');
+// Placeholder-stream engine.
+//
+// Tracks one FFmpeg child process PER live input (keyed by an `id`), so several
+// inputs can run placeholder loops at once and each can be started/stopped
+// independently. State is derived from the real process lifecycle (spawn →
+// survives startup = running; early exit = error), not a hopeful boolean.
 
-let ffmpegProcess; // Define the variable at the top level
+const { spawn } = require('child_process');
 
-const streamState = {
-    isStreaming: false
-};
+// id -> { child, status, startedAt, error, stderrTail }
+// status: 'starting' | 'running' | 'error' | 'stopped'
+const streams = new Map();
 
-function startStreaming(rtmpsUrl, rtmpsKey, io, filename) {
-    console.log(`Start streaming called with filename: ${filename}`); // Log the received filename
-    const videoPath = `/usr/src/app/src/public/videos/${filename}`; // Set the path directly
-    console.log(`Constructed video path: ${videoPath}`); // Log the constructed video path
+const STARTUP_GRACE_MS = 4000; // survive this long without exiting → "running"
 
-    // Emit a message to the client with the filename
-    io.emit('message', `File ${filename} started streaming.`);
-    const ffmpegCommand = `ffmpeg -stream_loop -1 -re -i "${videoPath}" -c copy -f flv ${rtmpsUrl}/${rtmpsKey}`;
-    
-    console.log(`FFmpeg command: ${ffmpegCommand}`); // Log the FFmpeg command
-
-    ffmpegProcess = exec(ffmpegCommand, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Error: ${error.message}`); // Log any errors from FFmpeg
-            io.emit('message', `Error: ${error.message}`);
-            streamState.isStreaming = false; // Update the state to false, as the stream failed to start
-            return;
-        }
-        if (stderr) {
-            console.error(`FFmpeg STDERR: ${stderr}`); // Log any stderr from FFmpeg
-        }
-        streamState.isStreaming = true; // Update the state to true, as the stream started successfully
-    });
-    streamState.isStreaming = true; 
-
-    // Emit a message right after starting the FFmpeg process
-    io.emit('message', 'Attempting to start streaming...');
-    ffmpegPID = ffmpegProcess.pid; //Log PID of ffmpeg process
-    ffmpegProcess.stderr.on('data', (data) => {
-        console.error(`FFmpeg: ${data}`); // Log any data received from FFmpeg's stderr
-        io.emit('message', `FFmpeg: ${data}`);
-    });
-
-    ffmpegProcess.on('close', (code) => {
-        console.log(`FFmpeg process exited with code ${code}`); // Log the exit code of FFmpeg
-        io.emit('message', `FFmpeg process exited with code ${code}`);
-        streamState.isStreaming = false;
-    });
+function buildArgs(videoPath, target) {
+    // Re-encode (don't -c copy): looping with stream copy produces broken,
+    // non-monotonic timestamps that Cloudflare rejects. A clean H.264/AAC
+    // re-encode with a ~2s GOP is what Live ingest wants.
+    return [
+        '-re', '-stream_loop', '-1', '-i', videoPath,
+        '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'zerolatency', '-pix_fmt', 'yuv420p',
+        '-g', '50', '-keyint_min', '50', '-sc_threshold', '0',
+        '-b:v', '2500k', '-maxrate', '2500k', '-bufsize', '5000k',
+        '-c:a', 'aac', '-ar', '44100', '-b:a', '128k', '-ac', '2',
+        '-f', 'flv', target,
+    ];
 }
 
+function lastErrLine(tail) {
+    const lines = String(tail || '').trim().split('\n').filter(Boolean);
+    return lines.length ? lines[lines.length - 1].slice(0, 220) : '';
+}
 
+function isLive(status) {
+    return status === 'running' || status === 'starting';
+}
 
-function stopStreaming(socket) {
-    if (ffmpegProcess) {
-        console.log('Attempting to stop FFmpeg process...');
-        socket.emit('message', 'Attempting to stop FFmpeg process...');
-
-        // Directly use pkill to forcefully terminate the FFmpeg process
-        console.log('Forcefully terminating FFmpeg process...');
-        exec(`pkill -f ffmpeg`, (error, stdout, stderr) => {
-            if (error) {
-                console.log(`Error while forcefully terminating FFmpeg: ${error}`);
-                socket.emit('message', `Error while forcefully terminating FFmpeg: ${error}`);
-                return;
-            }
-            if (stderr) {
-                console.log(`FFmpeg termination STDERR: ${stderr}`);
-            }
-            streamState.isStreaming = false;
-            console.log('FFmpeg process forcefully terminated.');
-            socket.emit('message', 'FFmpeg process forcefully terminated.');
-        });
-    } else {
-        console.log('No FFmpeg process to stop.');
-        socket.emit('message', 'No streaming process to stop');
+function startStreaming(id, videoPath, rtmpUrl, rtmpKey) {
+    const existing = streams.get(id);
+    if (existing && isLive(existing.status)) {
+        return { ok: true, status: existing.status, already: true };
     }
-    streamState.isStreaming = false; 
+
+    // Join without a double slash (rtmpUrl usually ends with "/live/").
+    const target = String(rtmpUrl).replace(/\/+$/, '') + '/' + String(rtmpKey);
+    const entry = { child: null, pid: null, status: 'starting', startedAt: Date.now(), error: null, stderrTail: '' };
+
+    let child;
+    try {
+        child = spawn('ffmpeg', buildArgs(videoPath, target), { stdio: ['ignore', 'ignore', 'pipe'] });
+    } catch (e) {
+        entry.status = 'error';
+        entry.error = 'spawn failed: ' + e.message;
+        streams.set(id, entry);
+        return { ok: false, status: 'error', error: entry.error };
+    }
+
+    entry.child = child;
+    entry.pid = child.pid;
+    streams.set(id, entry);
+
+    child.stderr.on('data', (d) => { entry.stderrTail = (entry.stderrTail + d.toString()).slice(-2000); });
+    child.on('error', (err) => { entry.status = 'error'; entry.error = 'ffmpeg error: ' + err.message; });
+    child.on('exit', (code, signal) => {
+        if (entry.status === 'stopped') return; // deliberate stop
+        if (code === 0) {
+            entry.status = 'stopped';
+        } else {
+            entry.status = 'error';
+            entry.error = `ffmpeg exited (code=${code}, signal=${signal || 'none'}). ${lastErrLine(entry.stderrTail)}`;
+        }
+    });
+
+    // If it's still alive after the grace window, it connected → running.
+    setTimeout(() => {
+        const e = streams.get(id);
+        if (e === entry && entry.status === 'starting') entry.status = 'running';
+    }, STARTUP_GRACE_MS);
+
+    console.log(`[stream] start id=${id} pid=${child.pid} -> ${target}`);
+    return { ok: true, status: 'starting' };
 }
 
-function isStreamActive() {
-    return streamState.isStreaming;
+function stopStreaming(id) {
+    const entry = streams.get(id);
+    if (!entry) return { ok: true, status: 'idle', notRunning: true };
+    entry.status = 'stopped';
+    try { if (entry.child) entry.child.kill('SIGKILL'); } catch (e) { /* already gone */ }
+    streams.delete(id);
+    console.log(`[stream] stop id=${id}`);
+    return { ok: true, status: 'stopped' };
 }
 
+function describe(id, e) {
+    return { id, status: e.status, isStreaming: isLive(e.status), since: e.startedAt, error: e.error || null };
+}
 
+function getState(id) {
+    if (id) {
+        const e = streams.get(id);
+        return e ? describe(id, e) : { id, status: 'idle', isStreaming: false, since: null, error: null };
+    }
+    const out = {};
+    for (const [k, e] of streams) out[k] = describe(k, e);
+    return { streams: out };
+}
 
-module.exports = {
-    startStreaming,
-    stopStreaming,
-    isStreamActive
-};
+module.exports = { startStreaming, stopStreaming, getState };

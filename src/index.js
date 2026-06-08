@@ -9,12 +9,8 @@ app.use(cors({
     credentials: true
 }));
 
-// The manual web panel + its Socket.IO feed were removed. FFmpeg status used to
-// be broadcast over Socket.IO to that panel; now it just goes to the server log.
-// streamer.js still calls `.emit(...)`, so we hand it this tiny stub. This MUST
-// be set on module.exports BEFORE requiring ./routes/apiRoutes (which reads it).
-module.exports.io = { emit: (_event, msg) => console.log('[stream]', String(msg)) };
-
+// The manual web panel + its Socket.IO feed were removed; FFmpeg status now
+// just goes to the server log (see streamer.js).
 const apiRoutes = require('./routes/apiRoutes');
 
 app.use(express.json());
