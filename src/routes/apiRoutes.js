@@ -1,95 +1,109 @@
 const express = require('express');
 const router = express.Router();
-const { stopStreaming } = require('../streamer');
-const { startStreaming } = require('../streamer'); 
-const { isStreamActive } = require('../streamer'); 
+const { startStreaming, stopStreaming, isStreamActive } = require('../streamer');
 const fs = require('fs');
 const path = require('path');
 
+const { io } = require('../index.js');
 
-const { io } = require('../index.js'); 
+const VIDEO_DIR = path.join(__dirname, '..', 'public', 'videos');
+const validVideoExtensions = /\.(mp4|mov)$/i;
 
-
-// Middleware for API Key verification
+// ── API key middleware ──────────────────────────────────────────────
 const authenticate = (req, res, next) => {
-    const apiKey = req.get('X-API-KEY'); // Assumes API key comes in the header named 'X-API-KEY'
+    const apiKey = req.get('X-API-KEY');
     if (apiKey && apiKey === process.env.API_SECRET_KEY) {
-        next(); // API Key is valid, proceed to the next middleware/route handler
-    } else {
-        res.status(401).json({ message: 'Invalid or missing API Key' }); // API Key is missing or invalid, return error
+        return next();
     }
+    res.status(401).json({ message: 'Invalid or missing API Key' });
 };
 
-const validVideoExtensions = /\.(mp4|mov)$/;
-// Define your API routes
+// EVERY route below requires a valid X-API-KEY. There are no public endpoints.
+router.use(authenticate);
 
-
-// Authenticated health check — lets clients verify their API key is correct
-// WITHOUT any side effects. Returns 200 only when X-API-KEY matches; the
-// authenticate middleware returns 401 otherwise. (stream-state/list-videos are
-// intentionally public, so they can't be used to validate the key.)
-router.get('/auth-check', authenticate, (req, res) => {
+// ── Health check (no side effects) ──────────────────────────────────
+router.get('/auth-check', (req, res) => {
     res.json({ ok: true, isStreaming: isStreamActive() });
 });
 
-
-// Define the /start-streaming API endpoint
-router.post('/start-streaming', authenticate, (req, res) => {
+// ── Start streaming ─────────────────────────────────────────────────
+router.post('/start-streaming', (req, res) => {
     let { videoFile, rtmpsUrl, rtmpsKey } = req.body;
-    console.log(`API Received - VideoFile: ${videoFile}, RTMPS URL: ${rtmpsUrl}, RTMPS Key: ${rtmpsKey}`);
-    
-    // Check for valid video file extension
-    if (!validVideoExtensions.test(videoFile)) {
+    if (!validVideoExtensions.test(videoFile || '')) {
         return res.status(400).json({ message: 'Invalid video file type.' });
     }
-
-    // Remove any path traversal characters
-    videoFile = videoFile.replace(/^.*[\\\/]/, '');
-
+    videoFile = String(videoFile).replace(/^.*[\\/]/, ''); // strip any path traversal
     if (rtmpsUrl && rtmpsKey && videoFile) {
-        startStreaming(rtmpsUrl, rtmpsKey, io, videoFile); 
+        startStreaming(rtmpsUrl, rtmpsKey, io, videoFile);
         res.json({ message: 'Streaming started' });
     } else {
         res.status(400).json({ message: 'RTMPS URL, key, and video file are required' });
     }
 });
 
-
-// Define the /stop-streaming API endpoint
-router.post('/stop-streaming', authenticate, (req, res) => {
-    console.log(`API Received stop request`);
-    
-    // Call the stopStreaming function to handle stopping the stream
-    // Pass the io instance for real-time communication
+// ── Stop streaming ──────────────────────────────────────────────────
+router.post('/stop-streaming', (req, res) => {
     stopStreaming(io);
-    
-    // Respond to the client indicating the stream has been stopped
     res.json({ message: 'Streaming stopped successfully' });
 });
 
+// ── Stream state ────────────────────────────────────────────────────
 router.get('/stream-state', (req, res) => {
-    const state = isStreamActive();
-    res.json({ isStreaming: state });
+    res.json({ isStreaming: isStreamActive() });
 });
 
-// File list
-const videoFileFilter = /\.(mp4|avi|mkv)$/;
-
+// ── List placeholder videos ─────────────────────────────────────────
+const videoFileFilter = /\.(mp4|mov)$/i;
 router.get('/list-videos', (req, res) => {
-  const directoryPath = path.join(__dirname, '..', 'public/videos'); 
-  fs.readdir(directoryPath, (err, files) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send('Error reading directory');
-      return;
-    }
-    
-    const videoFiles = files.filter(file => videoFileFilter.test(file));
-
-    res.json(videoFiles);
-  });
+    fs.readdir(VIDEO_DIR, (err, files) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ message: 'Error reading directory' });
+        }
+        res.json(files.filter(f => videoFileFilter.test(f)));
+    });
 });
 
+// ── Upload a placeholder video ──────────────────────────────────────
+// Raw binary body (no multipart needed). Filename comes in the X-Filename
+// header so WordPress can proxy a file straight through with the key.
+router.post('/upload', express.raw({ type: '*/*', limit: '300mb' }), (req, res) => {
+    const name = path.basename(String(req.get('X-Filename') || ''));
+    if (!name || !validVideoExtensions.test(name)) {
+        return res.status(400).json({ message: 'Invalid filename — only .mp4 or .mov allowed.' });
+    }
+    if (!req.body || !req.body.length) {
+        return res.status(400).json({ message: 'Empty upload.' });
+    }
+    const target = path.join(VIDEO_DIR, name);
+    if (!target.startsWith(VIDEO_DIR + path.sep)) {
+        return res.status(400).json({ message: 'Invalid path.' });
+    }
+    fs.writeFile(target, req.body, (err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ message: 'Write failed: ' + err.message });
+        }
+        res.json({ ok: true, file: name });
+    });
+});
 
+// ── Delete a placeholder video ──────────────────────────────────────
+router.post('/delete-video', (req, res) => {
+    const name = path.basename(String((req.body && req.body.file) || ''));
+    if (!name || !validVideoExtensions.test(name)) {
+        return res.status(400).json({ message: 'Invalid filename.' });
+    }
+    const target = path.join(VIDEO_DIR, name);
+    if (!target.startsWith(VIDEO_DIR + path.sep)) {
+        return res.status(400).json({ message: 'Invalid path.' });
+    }
+    fs.unlink(target, (err) => {
+        if (err) {
+            return res.status(err.code === 'ENOENT' ? 404 : 500).json({ message: err.message });
+        }
+        res.json({ ok: true, deleted: name });
+    });
+});
 
 module.exports = router;
