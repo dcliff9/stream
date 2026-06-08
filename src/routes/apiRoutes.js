@@ -24,6 +24,15 @@ const validVideoExtensions = /\.(mp4|mov)$/;
 // Define your API routes
 
 
+// Authenticated health check — lets clients verify their API key is correct
+// WITHOUT any side effects. Returns 200 only when X-API-KEY matches; the
+// authenticate middleware returns 401 otherwise. (stream-state/list-videos are
+// intentionally public, so they can't be used to validate the key.)
+router.get('/auth-check', authenticate, (req, res) => {
+    res.json({ ok: true, isStreaming: isStreamActive() });
+});
+
+
 // Define the /start-streaming API endpoint
 router.post('/start-streaming', authenticate, (req, res) => {
     let { videoFile, rtmpsUrl, rtmpsKey } = req.body;
