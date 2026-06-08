@@ -64,6 +64,25 @@ router.get('/list-videos', (req, res) => {
     });
 });
 
+// ── Stream a placeholder video (for preview) ────────────────────────
+// res.sendFile honors the Range header (206 partial content), so WordPress
+// can proxy it to an HTML5 <video> with seeking. Authenticated like the rest.
+router.get('/video', (req, res) => {
+    const name = path.basename(String(req.query.file || ''));
+    if (!name || !validVideoExtensions.test(name)) {
+        return res.status(400).json({ message: 'Invalid filename.' });
+    }
+    const target = path.join(VIDEO_DIR, name);
+    if (!target.startsWith(VIDEO_DIR + path.sep)) {
+        return res.status(400).json({ message: 'Invalid path.' });
+    }
+    res.sendFile(target, (err) => {
+        if (err && !res.headersSent) {
+            res.status(err.status || 404).json({ message: 'Not found.' });
+        }
+    });
+});
+
 // ── Upload a placeholder video ──────────────────────────────────────
 // Raw binary body (no multipart needed). Filename comes in the X-Filename
 // header so WordPress can proxy a file straight through with the key.
